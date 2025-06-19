@@ -1,5 +1,5 @@
 {
-  description = "lumx";
+  description = "Automatic screen bigness";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -17,23 +17,41 @@
         };
         rust = pkgs.rust-bin.stable.latest.default;
       in
-      {
-        packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname = "lumd";
-          version = "0.1.0";
+        {
+          packages = {
+            lumd = pkgs.rustPlatform.buildRustPackage {
+              pname = "lumd";
+              version = "0.1.0";
+              src = ./.;
+              cargoLock = {
+                lockFile =  ./Cargo.lock;
+              };
+            };
 
-          src = ./.;
+            lumctl = pkgs.rustPlatform.buildRustPackage {
+              pname = "lumctl";
+              version = "0.1.0";
+              src = ./.;
+              cargoLock = {
+                lockFile = ./Cargo.lock;
+              };
+            };
 
-          cargoLock = {
-            lockFile = ./Cargo.lock;
+            default = pkgs.symlinkJoin {
+              name = "lum-tools";
+              paths = [
+                self.packages.${system}.lumd
+                self.packages.${system}.lumctl
+              ];
+            };
+            
+            devShells.default = pkgs.mkShell {
+              buildInputs = [
+                rust
+                pkgs.pkg-config
+              ];
+            };
           };
-        };
+        });
+    }
 
-        devShells.default = pkgs.mkShell {
-          buildInputs = [
-            rust
-            pkgs.pkg-config
-          ];
-        };
-      });
-}
