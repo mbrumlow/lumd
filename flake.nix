@@ -26,7 +26,8 @@
               cargoLock = {
                 lockFile =  ./Cargo.lock;
               };
-              cargoInstallFlags = [ "--bin" "lumd" ];  
+              cargoInstallFlags = [ "--bin" "lumd" ];
+              buildAndTestSubdir = "lumd";
             };
 
             lumctl = pkgs.rustPlatform.buildRustPackage {
@@ -37,6 +38,7 @@
                 lockFile = ./Cargo.lock;
               };
               cargoInstallFlags = [ "--bin" "lumctl" ];
+              buildAndTestSubdir = "lumctl";
             };
 
             default = pkgs.symlinkJoin {
