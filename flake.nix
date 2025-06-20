@@ -7,8 +7,15 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      rust-overlay,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         overlays = [ rust-overlay.overlays.default ];
         pkgs = import nixpkgs {
@@ -17,45 +24,51 @@
         };
         rust = pkgs.rust-bin.stable.latest.default;
       in
-        {
-          packages = {
-            lumd = pkgs.rustPlatform.buildRustPackage {
-              pname = "lumd";
-              version = "0.1.0";
-              src = ./.;
-              cargoLock = {
-                lockFile =  ./Cargo.lock;
-              };
-              cargoInstallFlags = [ "--bin" "lumd" ];
-              buildAndTestSubdir = "lumd";
+      {
+        packages = {
+          lumd = pkgs.rustPlatform.buildRustPackage {
+            pname = "lumd";
+            version = "0.1.0";
+            src = ./.;
+            cargoLock = {
+              lockFile = ./Cargo.lock;
             };
-
-            lumctl = pkgs.rustPlatform.buildRustPackage {
-              pname = "lumctl";
-              version = "0.1.0";
-              src = ./.;
-              cargoLock = {
-                lockFile = ./Cargo.lock;
-              };
-              cargoInstallFlags = [ "--bin" "lumctl" ];
-              buildAndTestSubdir = "lumctl";
-            };
-
-            default = pkgs.symlinkJoin {
-              name = "lum-tools";
-              paths = [
-                self.packages.${system}.lumd
-                self.packages.${system}.lumctl
-              ];
-            };
-            
-            devShells.default = pkgs.mkShell {
-              buildInputs = [
-                rust
-                pkgs.pkg-config
-              ];
-            };
+            cargoInstallFlags = [
+              "--bin"
+              "lumd"
+            ];
+            buildAndTestSubdir = "lumd";
           };
-        });
-}
 
+          lumctl = pkgs.rustPlatform.buildRustPackage {
+            pname = "lumctl";
+            version = "0.1.0";
+            src = ./.;
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+            };
+            cargoInstallFlags = [
+              "--bin"
+              "lumctl"
+            ];
+            buildAndTestSubdir = "lumctl";
+          };
+
+          default = pkgs.symlinkJoin {
+            name = "lum-tools";
+            paths = [
+              self.packages.${system}.lumd
+              self.packages.${system}.lumctl
+            ];
+          };
+
+        };
+        devShells.default = pkgs.mkShell {
+          buildInputs = [
+            rust
+            pkgs.pkg-config
+          ];
+        };
+      }
+    );
+}
