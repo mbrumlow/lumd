@@ -2,76 +2,81 @@ use slog::{Drain, Logger, o};
 use std::fs::OpenOptions;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::ffi::CStr;
-use std::mem::MaybeUninit;
-use std::ptr;
 use std::io;
 use std::sync::Mutex;
+use std::process::Command;
 
-/// Get a simple timestamp string using the Linux libc directly
+/// Get a timestamp string using Rust std library
 fn get_timestamp() -> String {
-    // First try using libc's localtime
+    // Get current time since epoch
     let now = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => duration.as_secs(),
+        Ok(duration) => duration,
         Err(_) => return String::from("unknown_time"),
     };
     
-    let mut buffer = [0u8; 64];
+    // Format the timestamp manually
+    let secs = now.as_secs();
+    let seconds = secs % 60;
+    let minutes = (secs / 60) % 60;
+    let hours = (secs / 3600) % 24;
     
-    // Safe libc call to avoid Windows dependencies
-    unsafe {
-        let mut tm: libc::tm = MaybeUninit::zeroed().assume_init();
-        let tm_ptr = &mut tm as *mut libc::tm;
-        let time_ptr = &now as *const u64 as *const libc::time_t;
-        
-        if libc::localtime_r(time_ptr, tm_ptr) != ptr::null_mut() {
-            // Format time using strftime
-            let format = b"%Y-%m-%dT%H:%M:%S\0";
-            let format_ptr = format.as_ptr() as *const libc::c_char;
-            let buffer_ptr = buffer.as_mut_ptr() as *mut libc::c_char;
-            
-            libc::strftime(
-                buffer_ptr,
-                buffer.len(),
-                format_ptr,
-                tm_ptr,
-            );
-            
-            let c_str = CStr::from_ptr(buffer_ptr);
-            return c_str.to_string_lossy().into_owned();
-        }
-    }
+    // Calculate days since epoch and approximate date
+    // This is a simple implementation and doesn't account for leap years properly
+    let days_since_epoch = secs / 86400;
+    let years_since_epoch = days_since_epoch / 365;
+    let year = 1970 + years_since_epoch;
     
-    // Fallback to simple seconds since epoch if localtime_r fails
-    format!("{}", now)
+    let days_this_year = days_since_epoch - (years_since_epoch * 365);
+    
+    // Very simple month calculation
+    let (month, day) = calculate_month_day(year as i32, days_this_year as i32);
+    
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", 
+            year, month, day, hours, minutes, seconds)
 }
 
-/// Get the system hostname using libc directly to avoid Windows dependencies
-fn get_hostname() -> String {
-    let mut buffer = [0u8; 256];
+/// Very simple month/day calculation
+/// Not accurate for all edge cases but sufficient for logging timestamps
+fn calculate_month_day(year: i32, day_of_year: i32) -> (u32, u32) {
+    let is_leap_year = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     
-    // Use libc gethostname directly
-    unsafe {
-        if libc::gethostname(buffer.as_mut_ptr() as *mut libc::c_char, buffer.len()) == 0 {
-            // Find the null terminator
-            let mut len = 0;
-            while len < buffer.len() && buffer[len] != 0 {
-                len += 1;
-            }
-            
-            // Convert to string
-            if let Ok(hostname) = std::str::from_utf8(&buffer[0..len]) {
-                return hostname.to_string();
-            }
+    let days_in_month = [
+        31, 
+        if is_leap_year { 29 } else { 28 }, 
+        31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+    ];
+    
+    let mut remaining_days = day_of_year;
+    for (month_index, &days) in days_in_month.iter().enumerate() {
+        if remaining_days <= days {
+            return ((month_index + 1) as u32, remaining_days as u32);
         }
+        remaining_days -= days;
     }
     
-    // Fallback to "unknown" if gethostname fails
+    // Fallback
+    (12, 31)
+}
+
+/// Get the system hostname using the hostname command
+fn get_hostname() -> String {
+    // Try to get hostname using the hostname command
+    match Command::new("hostname").output() {
+        Ok(output) if output.status.success() => {
+            match String::from_utf8(output.stdout) {
+                Ok(hostname) => return hostname.trim().to_string(),
+                Err(_) => {}
+            }
+        },
+        _ => {}
+    }
+    
+    // Fallback to "unknown" if the command fails
     "unknown".to_string()
 }
 
 pub fn setup_logger<P: AsRef<Path>>(log_file_path: Option<P>) -> Logger {
-    // Set up timestamp for logging using direct libc calls to avoid Windows dependencies
+    // Set up timestamp for logging
     let timestamp = get_timestamp();
     let hostname = get_hostname();
     

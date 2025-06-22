@@ -19,6 +19,82 @@ A daemon for automatic ambient light-based brightness adjustment.
 - Proper error handling and logging
 - Graceful shutdown on signals
 
+## Development Environment
+
+This project uses Nix for reproducible builds and development environments. The Nix setup is designed to ensure consistent builds across different Linux environments.
+
+### Using Nix Flakes (recommended)
+
+```bash
+# Enter development shell
+nix develop
+
+# Build both programs
+nix build
+
+# Or build individual components
+nix build .#lumd
+nix build .#lumctl
+```
+
+### Using Traditional Nix
+
+```bash
+# Enter development shell
+nix-shell
+
+# Build using cargo
+cargo build
+```
+
+### Using direnv for automatic environment loading
+
+If you have direnv installed, the project will automatically load the Nix environment when you navigate to the project directory:
+
+```bash
+# Install direnv if you don't already have it
+nix-env -i direnv
+
+# Allow the direnv configuration
+cd /path/to/lumd
+direnv allow
+```
+
+### Troubleshooting Nix Development
+
+If you encounter build issues in the Nix environment:
+
+1. Make sure the environment is properly loaded:
+   ```bash
+   echo $IN_NIX_SHELL
+   ```
+   This should output "1" if you're in a Nix shell.
+
+2. Verify system libraries are available:
+   ```bash
+   pkg-config --list-all | grep openssl
+   ```
+
+3. Check the linker configuration:
+   ```bash
+   cat .cargo/config.toml
+   ```
+   This should show that static linking is disabled.
+
+4. For manual cargo builds, ensure dynamic linking:
+   ```bash
+   RUSTFLAGS="-C target-feature=-crt-static" cargo build
+   ```
+
+### Required System Packages
+
+If not using Nix, you'll need:
+- Rust toolchain (1.70+)
+- pkg-config
+- gcc
+- Linux headers (for nix crate)
+- OpenSSL development headers
+
 ## Usage
 
 ### Configuration

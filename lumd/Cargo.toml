@@ -16,8 +16,7 @@ signal-hook = "0.3.17"
 # TOML with minimal features
 toml = { version = "0.5", default-features = false }
 
-# Linux-specific dependencies
-libc = "0.2"
+# No direct libc dependency
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Additional Linux-specific dependencies
