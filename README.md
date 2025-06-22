@@ -23,14 +23,11 @@ A daemon for automatic ambient light-based brightness adjustment.
 
 ### Configuration
 
-`lumd` looks for a configuration file at `~/.config/lumd/config.toml`. If not found, it will use default settings.
+`lumd` follows the XDG Base Directory Specification and looks for a configuration file at `$XDG_CONFIG_HOME/lumd/config.toml` (typically `~/.config/lumd/config.toml`). If the config file doesn't exist, default settings will be used.
 
 Example configuration:
 
 ```toml
-# Socket directory path (defaults to XDG_RUNTIME_DIR or /var/run/user/$UID)
-socket_dir = "/var/run/user/1000"
-
 # Backlight settings
 min_brightness = 40
 brightness_offset = 40

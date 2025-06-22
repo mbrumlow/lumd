@@ -1,14 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use crate::error::{LumdError, Result};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    // Paths
-    #[serde(default = "default_socket_dir")]
-    pub socket_dir: PathBuf,
-    
     // Backlight settings
     #[serde(default = "default_min_brightness")]
     pub min_brightness: i32,
@@ -35,7 +31,6 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            socket_dir: default_socket_dir(),
             min_brightness: default_min_brightness(),
             brightness_offset: default_brightness_offset(),
             sample_interval_secs: default_sample_interval(),
@@ -48,11 +43,6 @@ impl Default for Config {
 }
 
 // Default values (replacing hardcoded values from the original code)
-fn default_socket_dir() -> PathBuf {
-    let uid = nix::unistd::getuid().as_raw();
-    PathBuf::from(format!("/var/run/user/{}", uid))
-}
-
 fn default_min_brightness() -> i32 { 40 }
 fn default_brightness_offset() -> i32 { 40 }
 fn default_sample_interval() -> u64 { 3 }
@@ -62,19 +52,18 @@ fn default_brightness_threshold() -> i32 { 8 }
 fn default_manual_adjustment() -> i32 { 8 }
 
 impl Config {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
+        
+        if !path.exists() {
+            // If config file doesn't exist, return default config
+            return Ok(Self::default());
+        }
+        
         let content = fs::read_to_string(path)
             .map_err(LumdError::from)?;
         
         toml::from_str(&content)
             .map_err(|e| LumdError::InvalidData(format!("Config parse error: {}", e)))
-    }
-    
-    pub fn get_socket_path(&self) -> PathBuf {
-        self.socket_dir.join("lumd.sock")
     }
 }

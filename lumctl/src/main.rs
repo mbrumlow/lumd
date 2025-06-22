@@ -4,7 +4,7 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
-use std::{fs, process};
+use std::{env, fs, process};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -34,22 +34,29 @@ struct Cli {
     command: Command,
 }
 
-fn get_socket_path() -> PathBuf {
+fn get_socket_path() -> Result<PathBuf> {
     // Use XDG runtime dir if available
-    if let Some(runtime_dir) = dirs::runtime_dir() {
-        return runtime_dir.join("lumd.sock");
+    if let Ok(runtime_dir) = env::var("XDG_RUNTIME_DIR") {
+        return Ok(PathBuf::from(runtime_dir).join("lumd.sock"));
     }
     
     // Fall back to /var/run/user/$UID/
     let uid = unistd::getuid().as_raw();
     let dir = PathBuf::from(format!("/var/run/user/{}", uid));
-    let _ = fs::create_dir_all(&dir);
-    let _ = fs::set_permissions(&dir, fs::Permissions::from_mode(0o700));
-    dir.join("lumd.sock")
+    
+    if !dir.exists() {
+        fs::create_dir_all(&dir)
+            .map_err(|e| LumctlError::Io(e))?;
+    }
+    
+    fs::set_permissions(&dir, fs::Permissions::from_mode(0o700))
+        .map_err(|e| LumctlError::Io(e))?;
+        
+    Ok(dir.join("lumd.sock"))
 }
 
 fn send_command(command: Command) -> Result<()> {
-    let socket_path = get_socket_path();
+    let socket_path = get_socket_path()?;
     
     // Convert the enum to a string
     let cmd_str = match command {

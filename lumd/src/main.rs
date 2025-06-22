@@ -106,8 +106,9 @@ fn main() -> Result<()> {
     let socket_log = log.new(o!("component" => "socket_server"));
     let running_clone = Arc::clone(&running);
     let server_log = log.clone();
+    let socket_path_owned = socket_path.to_path_buf();
     thread::spawn(move || {
-        if let Err(e) = server::socket_server(socket_log, socket_path, tx_clone, running_clone) {
+        if let Err(e) = server::socket_server(socket_log, socket_path_owned, tx_clone, running_clone) {
             error!(server_log, "Socket server error"; "error" => %e);
         }
     });
