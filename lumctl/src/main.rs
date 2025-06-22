@@ -1,11 +1,46 @@
+use clap::{Parser, ValueEnum};
 use nix::unistd;
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
-use std::{env, fs};
+use std::{fs, process};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+enum LumctlError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    
+    #[error("Failed to connect to lumd: {0}")]
+    Connection(String),
+}
+
+type Result<T> = std::result::Result<T, LumctlError>;
+
+#[derive(Debug, Clone, ValueEnum)]
+enum Command {
+    Up,
+    Down,
+    Resample,
+    Shutdown,
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about = "Control the lumd ambient light daemon")]
+struct Cli {
+    /// Command to send to lumd
+    #[arg(value_enum)]
+    command: Command,
+}
 
 fn get_socket_path() -> PathBuf {
+    // Use XDG runtime dir if available
+    if let Some(runtime_dir) = dirs::runtime_dir() {
+        return runtime_dir.join("lumd.sock");
+    }
+    
+    // Fall back to /var/run/user/$UID/
     let uid = unistd::getuid().as_raw();
     let dir = PathBuf::from(format!("/var/run/user/{}", uid));
     let _ = fs::create_dir_all(&dir);
@@ -13,21 +48,39 @@ fn get_socket_path() -> PathBuf {
     dir.join("lumd.sock")
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: lumctl <up|down|resample>");
-        std::process::exit(1);
-    }
-
+fn send_command(command: Command) -> Result<()> {
     let socket_path = get_socket_path();
+    
+    // Convert the enum to a string
+    let cmd_str = match command {
+        Command::Up => "up",
+        Command::Down => "down",
+        Command::Resample => "resample",
+        Command::Shutdown => "shutdown",
+    };
+    
+    // Try to connect to the socket
     match UnixStream::connect(&socket_path) {
         Ok(mut stream) => {
-            let _ = stream.write_all(args[1].as_bytes());
+            stream.write_all(cmd_str.as_bytes())?;
+            Ok(())
         }
         Err(e) => {
-            eprintln!("Failed to connect to lumd: {e}");
-            std::process::exit(1);
+            Err(LumctlError::Connection(format!("Is lumd running? Error: {}", e)))
+        }
+    }
+}
+
+fn main() {
+    // Parse command line arguments
+    let cli = Cli::parse();
+    
+    // Send the command to the daemon
+    match send_command(cli.command) {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            process::exit(1);
         }
     }
 }
