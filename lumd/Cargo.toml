@@ -5,19 +5,21 @@ edition = "2024"
 
 [dependencies]
 nix = { version = "0.30.1", features = ["user"] }
-thiserror = "1.0"
 slog = "2.7.0"
 slog-async = "2.7.0"
-slog-bunyan = "2.4.0"
-serde = { version = "1.0", features = ["derive"] }
+slog-json = "2.6.1"  # Use slog-json directly instead of slog-bunyan
+# Use manual struct serialization instead of derive to avoid proc-macro issues
+serde = { version = "1.0", default-features = false, features = ["std"] }
 xdg = "2.5"
 signal-hook = "0.3.17"
 
 # TOML with minimal features
 toml = { version = "0.5", default-features = false }
 
-# Time formatting without Windows dependencies
-time = { version = "0.3", default-features = false, features = ["formatting", "std", "macros", "local-offset"] }
+# Linux-specific dependencies
+libc = "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-# Linux-specific dependencies
+# Additional Linux-specific dependencies
+
+# Profile settings moved to workspace Cargo.toml

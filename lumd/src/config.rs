@@ -1,57 +1,42 @@
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 use crate::error::{LumdError, Result};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+// Simple configuration struct without serde derive macros
+#[derive(Debug, Clone)]
 pub struct Config {
     // Backlight settings
-    #[serde(default = "default_min_brightness")]
     pub min_brightness: i32,
-    #[serde(default = "default_brightness_offset")]
     pub brightness_offset: i32,
     
     // Sampling settings
-    #[serde(default = "default_sample_interval")]
     pub sample_interval_secs: u64,
-    #[serde(default = "default_transition_steps")]
     pub transition_steps: u32,
-    #[serde(default = "default_step_delay_ms")]
     pub step_delay_ms: u64,
     
     // Interpolation threshold
-    #[serde(default = "default_brightness_threshold")]
     pub brightness_threshold: i32,
     
     // Adjustment amount for manual controls
-    #[serde(default = "default_manual_adjustment")]
     pub manual_adjustment_amount: i32,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            min_brightness: default_min_brightness(),
-            brightness_offset: default_brightness_offset(),
-            sample_interval_secs: default_sample_interval(),
-            transition_steps: default_transition_steps(),
-            step_delay_ms: default_step_delay_ms(),
-            brightness_threshold: default_brightness_threshold(),
-            manual_adjustment_amount: default_manual_adjustment(),
+            min_brightness: 40,
+            brightness_offset: 40,
+            sample_interval_secs: 3,
+            transition_steps: 10,
+            step_delay_ms: 10,
+            brightness_threshold: 8,
+            manual_adjustment_amount: 8,
         }
     }
 }
 
-// Default values (replacing hardcoded values from the original code)
-fn default_min_brightness() -> i32 { 40 }
-fn default_brightness_offset() -> i32 { 40 }
-fn default_sample_interval() -> u64 { 3 }
-fn default_transition_steps() -> u32 { 10 }
-fn default_step_delay_ms() -> u64 { 10 }
-fn default_brightness_threshold() -> i32 { 8 }
-fn default_manual_adjustment() -> i32 { 8 }
-
 impl Config {
+    // Manual parsing of TOML file without using serde derive
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
         
@@ -63,7 +48,48 @@ impl Config {
         let content = fs::read_to_string(path)
             .map_err(LumdError::from)?;
         
-        toml::from_str(&content)
-            .map_err(|e| LumdError::InvalidData(format!("Config parse error: {}", e)))
+        // Create config with default values that will be overridden by any values in the file
+        let mut config = Self::default();
+        
+        // Parse the TOML content using toml crate directly
+        let parsed: toml::Value = toml::from_str(&content)
+            .map_err(|e| LumdError::InvalidData(format!("Config parse error: {}", e)))?;
+        
+        // Extract values from the parsed TOML if they exist
+        if let Some(table) = parsed.as_table() {
+            // Backlight settings
+            if let Some(value) = table.get("min_brightness").and_then(|v| v.as_integer()) {
+                config.min_brightness = value as i32;
+            }
+            
+            if let Some(value) = table.get("brightness_offset").and_then(|v| v.as_integer()) {
+                config.brightness_offset = value as i32;
+            }
+            
+            // Sampling settings
+            if let Some(value) = table.get("sample_interval_secs").and_then(|v| v.as_integer()) {
+                config.sample_interval_secs = value as u64;
+            }
+            
+            if let Some(value) = table.get("transition_steps").and_then(|v| v.as_integer()) {
+                config.transition_steps = value as u32;
+            }
+            
+            if let Some(value) = table.get("step_delay_ms").and_then(|v| v.as_integer()) {
+                config.step_delay_ms = value as u64;
+            }
+            
+            // Interpolation threshold
+            if let Some(value) = table.get("brightness_threshold").and_then(|v| v.as_integer()) {
+                config.brightness_threshold = value as i32;
+            }
+            
+            // Adjustment amount
+            if let Some(value) = table.get("manual_adjustment_amount").and_then(|v| v.as_integer()) {
+                config.manual_adjustment_amount = value as i32;
+            }
+        }
+        
+        Ok(config)
     }
 }
