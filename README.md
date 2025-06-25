@@ -197,7 +197,11 @@ Add the following to your Home Manager configuration:
 
 ```nix
 {
-  inputs.lumd.url = "github:mbrumlow/lumd";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager.url = "github:nix-community/home-manager";
+    lumd.url = "github:mbrumlow/lumd";
+  };
   
   outputs = { self, nixpkgs, home-manager, lumd, ... }: {
     homeConfigurations."yourusername" = home-manager.lib.homeManagerConfiguration {
@@ -207,6 +211,7 @@ Add the following to your Home Manager configuration:
         {
           services.lumd = {
             enable = true;
+            # The package is automatically set by the module
             # Optional settings
             minBrightness = 30;
             brightnessOffset = 50;
@@ -225,7 +230,10 @@ Add the following to your NixOS configuration:
 
 ```nix
 {
-  inputs.lumd.url = "github:mbrumlow/lumd";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    lumd.url = "github:mbrumlow/lumd";
+  };
   
   outputs = { self, nixpkgs, lumd, ... }: {
     nixosConfigurations."yourhostname" = nixpkgs.lib.nixosSystem {
@@ -235,6 +243,7 @@ Add the following to your NixOS configuration:
         {
           services.lumd = {
             enable = true;
+            # The package is automatically set by the module
             users = [ "yourusername" ];
             # Optional global settings
             globalConfig = {

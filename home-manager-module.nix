@@ -10,8 +10,7 @@ in {
 
     package = mkOption {
       type = types.package;
-      default = pkgs.lumd;
-      defaultText = literalExpression "pkgs.lumd";
+      # No default, must be provided by the user or the flake
       description = "The lumd package to use.";
     };
 

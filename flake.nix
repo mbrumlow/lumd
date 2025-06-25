@@ -16,12 +16,32 @@
     }:
     {
       # Home Manager module
-      homeManagerModules.default = import ./home-manager-module.nix;
+      homeManagerModules.default = { config, lib, pkgs, ... }: 
+        let 
+          system = pkgs.stdenv.hostPlatform.system;
+          lumdPackage = self.packages.${system}.default;
+        in {
+          imports = [ ./home-manager-module.nix ];
+          
+          # Pre-configure the package option to point to our flake's package
+          config = lib.mkIf config.services.lumd.enable {
+            services.lumd.package = lib.mkDefault lumdPackage;
+          };
+        };
       
       # NixOS module
-      nixosModules.default = { config, lib, pkgs, ... }: {
-        imports = [ ./nixos-module.nix ];
-      };
+      nixosModules.default = { config, lib, pkgs, ... }:
+        let 
+          system = pkgs.stdenv.hostPlatform.system;
+          lumdPackage = self.packages.${system}.default;
+        in {
+          imports = [ ./nixos-module.nix ];
+          
+          # Pre-configure the package option to point to our flake's package
+          config = lib.mkIf config.services.lumd.enable {
+            services.lumd.package = lib.mkDefault lumdPackage;
+          };
+        };
     } // 
     flake-utils.lib.eachDefaultSystem (
       system:
