@@ -209,6 +209,13 @@ If you encounter permission errors:
    ```
    You may need to add yourself to a group or create a udev rule to allow access.
 
+4. If you see permissions errors about existing directories, check their permissions:
+   ```bash
+   # If you see errors about ConfigurationDirectory mode conflicts
+   chmod 755 ~/.config/lumd
+   ```
+   Alternatively, you can edit the service file to remove the ConfigurationDirectory directive.
+
 ### Using Nix
 
 #### As a Package

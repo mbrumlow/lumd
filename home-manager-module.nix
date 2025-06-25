@@ -117,9 +117,10 @@ in {
         ProtectHome = "read-write";
         ReadWritePaths = "%h/.config/lumd %h/.local/share/lumd %h/.cache/lumd %h/.local/state/lumd %h/.local/run";
         RuntimeDirectory = "lumd";
-        RuntimeDirectoryMode = "0700";
-        ConfigurationDirectory = "lumd";
-        ConfigurationDirectoryMode = "0700";
+        RuntimeDirectoryMode = "0755";
+        # Use ReadWritePaths instead of ConfigurationDirectory to avoid permission conflicts
+        # ConfigurationDirectory = "lumd";
+        # ConfigurationDirectoryMode = "0700";
         ProtectControlGroups = true;
         ProtectKernelModules = true;
         RestrictRealtime = true;
