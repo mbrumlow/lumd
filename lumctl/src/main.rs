@@ -3,7 +3,7 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
-use std::{env, fs, process, fmt, error::Error};
+use std::{env, error::Error, fmt, fs, process};
 
 #[derive(Debug)]
 enum LumctlError {
@@ -51,7 +51,7 @@ impl Command {
             _ => Err(LumctlError::Usage(format!("Unknown command: {}", s))),
         }
     }
-    
+
     // Convert to a string for sending to the daemon
     fn as_str(&self) -> &'static str {
         match self {
@@ -66,39 +66,38 @@ impl Command {
 fn get_socket_path() -> Result<PathBuf> {
     // Use XDG runtime dir if available
     if let Ok(runtime_dir) = env::var("XDG_RUNTIME_DIR") {
-        return Ok(PathBuf::from(runtime_dir).join("lumd.sock"));
+        return Ok(PathBuf::from(runtime_dir).join("lumd").join("lumd.sock"));
     }
-    
+
     // Fall back to /var/run/user/$UID/
     let uid = unistd::getuid().as_raw();
     let dir = PathBuf::from(format!("/var/run/user/{}", uid));
-    
+
     if !dir.exists() {
-        fs::create_dir_all(&dir)
-            .map_err(|e| LumctlError::Io(e))?;
+        fs::create_dir_all(&dir).map_err(|e| LumctlError::Io(e))?;
     }
-    
-    fs::set_permissions(&dir, fs::Permissions::from_mode(0o700))
-        .map_err(|e| LumctlError::Io(e))?;
-        
+
+    fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).map_err(|e| LumctlError::Io(e))?;
+
     Ok(dir.join("lumd.sock"))
 }
 
 fn send_command(command: &Command) -> Result<()> {
     let socket_path = get_socket_path()?;
-    
+
     // Get the string representation of the command
     let cmd_str = command.as_str();
-    
+
     // Try to connect to the socket
     match UnixStream::connect(&socket_path) {
         Ok(mut stream) => {
             stream.write_all(cmd_str.as_bytes())?;
             Ok(())
         }
-        Err(e) => {
-            Err(LumctlError::Connection(format!("Is lumd running? Error: {}", e)))
-        }
+        Err(e) => Err(LumctlError::Connection(format!(
+            "Is lumd running? Error: {}",
+            e
+        ))),
     }
 }
 
@@ -116,13 +115,13 @@ fn print_usage() {
 fn main() {
     // Get command-line arguments
     let args: Vec<String> = env::args().collect();
-    
+
     // Check that we have a command
     if args.len() != 2 {
         print_usage();
         process::exit(1);
     }
-    
+
     // Parse the command
     let command = match Command::from_str(&args[1]) {
         Ok(cmd) => cmd,
@@ -132,7 +131,7 @@ fn main() {
             process::exit(1);
         }
     };
-    
+
     // Send the command to the daemon
     match send_command(&command) {
         Ok(_) => (),
