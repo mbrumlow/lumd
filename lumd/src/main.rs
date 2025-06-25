@@ -32,8 +32,8 @@ fn main() -> Result<()> {
         }
     };
     
-    // Set up logger
-    let root_log = logger::setup_logger(Some(paths.log_file()));
+    // Set up logger - using stdout/stderr for systemd journal
+    let root_log = logger::setup_logger(None);
     let log = root_log.clone();
     info!(log, "Lumd starting up"; "version" => env!("CARGO_PKG_VERSION"));
     

@@ -93,12 +93,17 @@ in {
         Restart = "on-failure";
         RestartSec = 5;
         
+        # Logging
+        StandardOutput = "journal";
+        StandardError = "journal";
+        SyslogIdentifier = "lumd";
+        
         # Security settings
         PrivateTmp = true;
         NoNewPrivileges = true;
         ProtectSystem = "strict";
         ProtectHome = "read-only";
-        ReadWritePaths = "%h/.cache %h/.local/share %h/.config/lumd";
+        ReadWritePaths = "%h/.config/lumd";
         ProtectControlGroups = true;
         ProtectKernelModules = true;
         RestrictRealtime = true;

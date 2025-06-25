@@ -11,7 +11,6 @@ pub struct Paths {
     pub cache_dir: PathBuf,
     pub config_file_path: PathBuf,
     pub socket_path: PathBuf,
-    pub log_file_path: PathBuf,
 }
 
 impl Paths {
@@ -41,10 +40,6 @@ impl Paths {
         // Create socket path
         let socket_path = runtime_dir.join("lumd.sock");
         
-        // Create log file path
-        let log_file_path = xdg.place_cache_file("lumd.log")
-            .map_err(|e| LumdError::InvalidData(format!("Could not create log path: {}", e)))?;
-        
         // Ensure runtime directory exists with proper permissions
         Self::ensure_dir_exists(&runtime_dir, 0o700)?;
         
@@ -54,7 +49,6 @@ impl Paths {
             cache_dir,
             config_file_path,
             socket_path,
-            log_file_path,
         })
     }
     
@@ -78,9 +72,5 @@ impl Paths {
     
     pub fn socket_path(&self) -> &PathBuf {
         &self.socket_path
-    }
-    
-    pub fn log_file(&self) -> &PathBuf {
-        &self.log_file_path
     }
 }

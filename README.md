@@ -16,7 +16,7 @@ A daemon for automatic ambient light-based brightness adjustment.
 - Smooth transitions between brightness levels
 - Manual brightness adjustment via the `lumctl` command
 - User-configurable settings
-- Proper error handling and logging
+- Proper error handling with systemd journal logging
 - Graceful shutdown on signals
 
 ## Development Environment
@@ -177,6 +177,9 @@ systemctl --user start lumd
 
 # Check status
 systemctl --user status lumd
+
+# View logs
+journalctl --user -u lumd
 ```
 
 ### Using Nix
