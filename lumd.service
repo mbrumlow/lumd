@@ -22,7 +22,7 @@ PrivateTmp=true
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-write
-ReadWritePaths=%h/.config/lumd %h/.local/share/lumd %h/.cache/lumd %h/.local/state/lumd %h/.local/run
+ReadWritePaths=%h/.config/lumd %h/.local/share/lumd %h/.cache/lumd
 RuntimeDirectory=lumd
 RuntimeDirectoryMode=0755
 # Use ReadWritePaths instead of ConfigurationDirectory to avoid permission conflicts

@@ -20,26 +20,22 @@ impl Paths {
         // Get the base directories
         let config_dir = xdg.get_config_home();
 
-        // Runtime directory handling based on environment
-        let runtime_dir = if let Ok(runtime_dir) = std::env::var("RUNTIME_DIRECTORY") {
-            // When running under systemd with RuntimeDirectory=lumd
-            match std::env::var("XDG_RUNTIME_DIR") {
-                Ok(xdg_dir) => PathBuf::from(xdg_dir).join(runtime_dir),
-                Err(_) => {
-                    let uid = nix::unistd::getuid().as_raw();
-                    PathBuf::from(format!("/run/user/{}/{}", uid, runtime_dir))
-                }
-            }
-        } else {
-            // Fallback to standard XDG runtime dir
-            match std::env::var("XDG_RUNTIME_DIR") {
-                Ok(dir) => PathBuf::from(dir),
-                Err(_) => {
-                    let uid = nix::unistd::getuid().as_raw();
-                    PathBuf::from(format!("/run/user/{}", uid))
-                }
+        // Runtime directory handling
+        // First try XDG_RUNTIME_DIR (the standard environment variable)
+        // Then fall back to a subdirectory of /tmp which should always exist
+        let runtime_dir = match std::env::var("XDG_RUNTIME_DIR") {
+            Ok(dir) => PathBuf::from(dir).join("lumd"),
+            Err(_) => {
+                let uid = nix::unistd::getuid().as_raw();
+                PathBuf::from(format!("/tmp/lumd-{}", uid))
             }
         };
+        
+        // Ensure the runtime directory exists
+        if !runtime_dir.exists() {
+            std::fs::create_dir_all(&runtime_dir)
+                .map_err(|e| LumdError::InvalidData(format!("Failed to create runtime directory: {}", e)))?;
+        }
 
         let cache_dir = xdg.get_cache_home();
 

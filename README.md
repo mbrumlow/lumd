@@ -164,7 +164,6 @@ After installing with Cargo, you can set up the systemd user service:
 # Create required directories
 mkdir -p ~/.config/lumd/
 mkdir -p ~/.local/share/lumd
-mkdir -p ~/.local/run/lumd
 mkdir -p ~/.cache/lumd
 
 # Copy example config
@@ -194,7 +193,6 @@ If you encounter permission errors:
    # The service needs write access to:
    ls -la ~/.config/lumd
    ls -la ~/.local/share/lumd
-   ls -la ~/.local/run/lumd
    ls -la ~/.cache/lumd
    ```
 
