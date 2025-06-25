@@ -150,6 +150,101 @@ cargo build --release
 
 ## Installation
 
+### Using Cargo
+
 ```
 cargo install --path .
+```
+
+### Manual Systemd Setup
+
+After installing with Cargo, you can set up the systemd user service:
+
+```bash
+# Create config directory if it doesn't exist
+mkdir -p ~/.config/lumd/
+
+# Copy example config
+cp /path/to/repo/examples/config.toml ~/.config/lumd/
+
+# Install the systemd user service
+mkdir -p ~/.config/systemd/user/
+cp /path/to/repo/lumd.service ~/.config/systemd/user/
+
+# Enable and start the service
+systemctl --user enable lumd
+systemctl --user start lumd
+
+# Check status
+systemctl --user status lumd
+```
+
+### Using Nix
+
+#### As a Package
+
+```bash
+# Install using flake
+nix profile install github:mbrumlow/lumd
+
+# Or build it
+nix build github:mbrumlow/lumd
+```
+
+### With Home Manager
+
+Add the following to your Home Manager configuration:
+
+```nix
+{
+  inputs.lumd.url = "github:mbrumlow/lumd";
+  
+  outputs = { self, nixpkgs, home-manager, lumd, ... }: {
+    homeConfigurations."yourusername" = home-manager.lib.homeManagerConfiguration {
+      # ...
+      modules = [
+        lumd.homeManagerModules.default
+        {
+          services.lumd = {
+            enable = true;
+            # Optional settings
+            minBrightness = 30;
+            brightnessOffset = 50;
+            sampleIntervalSecs = 5;
+          };
+        }
+      ];
+    };
+  };
+}
+```
+
+### With NixOS
+
+Add the following to your NixOS configuration:
+
+```nix
+{
+  inputs.lumd.url = "github:mbrumlow/lumd";
+  
+  outputs = { self, nixpkgs, lumd, ... }: {
+    nixosConfigurations."yourhostname" = nixpkgs.lib.nixosSystem {
+      # ...
+      modules = [
+        lumd.nixosModules.default
+        {
+          services.lumd = {
+            enable = true;
+            users = [ "yourusername" ];
+            # Optional global settings
+            globalConfig = {
+              minBrightness = 30;
+              brightnessOffset = 50;
+            };
+          };
+        }
+      ];
+    };
+  };
+}
 ```

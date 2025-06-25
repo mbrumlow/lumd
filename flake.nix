@@ -14,6 +14,15 @@
       flake-utils,
       rust-overlay,
     }:
+    {
+      # Home Manager module
+      homeManagerModules.default = import ./home-manager-module.nix;
+      
+      # NixOS module
+      nixosModules.default = { config, lib, pkgs, ... }: {
+        imports = [ ./nixos-module.nix ];
+      };
+    } // 
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -80,6 +89,10 @@
               self.packages.${system}.lumd
               self.packages.${system}.lumctl
             ];
+            postBuild = ''
+              mkdir -p $out/lib/systemd/user
+              cp ${./lumd.service} $out/lib/systemd/user/lumd.service
+            '';
           };
 
         };

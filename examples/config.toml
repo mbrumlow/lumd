@@ -1,0 +1,16 @@
+# Lumd configuration - Example
+
+# Backlight settings
+min_brightness = 40
+brightness_offset = 40
+
+# Sampling settings
+sample_interval_secs = 3
+transition_steps = 10
+step_delay_ms = 10
+
+# Interpolation threshold
+brightness_threshold = 8
+
+# Adjustment amount for manual controls
+manual_adjustment_amount = 8
