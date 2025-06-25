@@ -14,6 +14,15 @@
       flake-utils,
       rust-overlay,
     }:
+    {
+      # Home Manager module
+      homeManagerModules.default = import ./home-manager-module.nix;
+      
+      # NixOS module
+      nixosModules.default = { config, lib, pkgs, ... }: {
+        imports = [ ./nixos-module.nix ];
+      };
+    } // 
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -38,6 +47,16 @@
               "lumd"
             ];
             buildAndTestSubdir = "lumd";
+            # Add necessary build inputs and native build inputs
+            buildInputs = [
+              pkgs.glibc
+              pkgs.openssl
+            ];
+            nativeBuildInputs = [
+              pkgs.pkg-config
+            ];
+            # Disable static linking for binary
+            RUSTFLAGS = "-C target-feature=-crt-static";
           };
 
           lumctl = pkgs.rustPlatform.buildRustPackage {
@@ -52,6 +71,16 @@
               "lumctl"
             ];
             buildAndTestSubdir = "lumctl";
+            # Add necessary build inputs and native build inputs
+            buildInputs = [
+              pkgs.glibc
+              pkgs.openssl
+            ];
+            nativeBuildInputs = [
+              pkgs.pkg-config
+            ];
+            # Disable static linking for binary
+            RUSTFLAGS = "-C target-feature=-crt-static";
           };
 
           default = pkgs.symlinkJoin {
@@ -60,6 +89,10 @@
               self.packages.${system}.lumd
               self.packages.${system}.lumctl
             ];
+            postBuild = ''
+              mkdir -p $out/lib/systemd/user
+              cp ${./lumd.service} $out/lib/systemd/user/lumd.service
+            '';
           };
 
         };
@@ -67,7 +100,52 @@
           buildInputs = [
             rust
             pkgs.pkg-config
+            pkgs.glibc
+            pkgs.glibc.dev
+            pkgs.gcc
+            pkgs.binutils
+            
+            # Linux-specific libraries
+            pkgs.linuxHeaders
+            
+            # System libraries needed for nix crate
+            pkgs.openssl
+            pkgs.openssl.dev
+            
+            # Development tools
+            pkgs.rustup
+            pkgs.cargo-edit
+            pkgs.cargo-watch
+            pkgs.cargo-audit
+            pkgs.rust-analyzer
           ];
+          
+          # Set environment variables
+          shellHook = ''
+            # Set linker flags to avoid static linking
+            export RUSTFLAGS="-C target-feature=-crt-static"
+            
+            # Set path to system libraries
+            export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [
+              pkgs.glibc
+              pkgs.gcc.cc.lib
+              pkgs.openssl
+            ]}
+            
+            # Set C compiler path
+            export CC=${pkgs.gcc}/bin/gcc
+            
+            # Set linker path
+            export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=${pkgs.gcc}/bin/gcc
+            
+            # Add pkg-config path for system libraries
+            export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig"
+            
+            # Make rust-src available for rust-analyzer
+            export RUST_SRC_PATH="${rust}/lib/rustlib/src/rust/library"
+            
+            echo "Welcome to lumd development environment!"
+          '';
         };
       }
     );

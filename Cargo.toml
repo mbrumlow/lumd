@@ -1,4 +1,15 @@
 
 [workspace]
-members = ["lumd", "lumctl"]
+members = ["lumd", "lumctl", "test_logger_proj"]
+resolver = "3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
 
