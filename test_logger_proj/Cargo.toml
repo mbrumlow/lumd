@@ -1,0 +1,9 @@
+[package]
+name = "test_logger_proj"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+slog = "2.7.0"
+slog-term = "2.9.0"
+slog-async = "2.7.0"
