@@ -1,7 +1,5 @@
 use crate::error::{LumdError, Result};
-use std::fs;
-use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use xdg::BaseDirectories;
 
 pub struct Paths {
@@ -22,12 +20,24 @@ impl Paths {
         // Get the base directories
         let config_dir = xdg.get_config_home();
 
-        // Runtime directory handling (not directly provided by xdg crate)
-        let runtime_dir = match std::env::var("XDG_RUNTIME_DIR") {
-            Ok(dir) => PathBuf::from(dir),
-            Err(_) => {
-                let uid = nix::unistd::getuid().as_raw();
-                PathBuf::from(format!("/var/run/user/{}", uid))
+        // Runtime directory handling based on environment
+        let runtime_dir = if let Ok(runtime_dir) = std::env::var("RUNTIME_DIRECTORY") {
+            // When running under systemd with RuntimeDirectory=lumd
+            match std::env::var("XDG_RUNTIME_DIR") {
+                Ok(xdg_dir) => PathBuf::from(xdg_dir).join(runtime_dir),
+                Err(_) => {
+                    let uid = nix::unistd::getuid().as_raw();
+                    PathBuf::from(format!("/run/user/{}/{}", uid, runtime_dir))
+                }
+            }
+        } else {
+            // Fallback to standard XDG runtime dir
+            match std::env::var("XDG_RUNTIME_DIR") {
+                Ok(dir) => PathBuf::from(dir),
+                Err(_) => {
+                    let uid = nix::unistd::getuid().as_raw();
+                    PathBuf::from(format!("/run/user/{}", uid))
+                }
             }
         };
 

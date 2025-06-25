@@ -1,7 +1,10 @@
 use std::{
     fs, io,
     io::Read,
-    os::unix::net::UnixListener,
+    os::unix::{
+        net::UnixListener,
+        fs::PermissionsExt,
+    },
     path::PathBuf,
     sync::{mpsc::Sender, atomic::{AtomicBool, Ordering}, Arc},
     thread,
@@ -24,11 +27,36 @@ pub fn socket_server(
     trigger_tx: Sender<LumdCommand>,
     running: Arc<AtomicBool>
 ) -> Result<()> {
-    if socket_path.exists() {
-        fs::remove_file(&socket_path)?;
+    // Ensure socket directory exists
+    if let Some(parent) = socket_path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| LumdError::InvalidData(format!("Failed to create socket directory: {}", e)))?;
+        }
     }
 
-    let listener = UnixListener::bind(&socket_path)?;
+    // Remove existing socket if it exists
+    if socket_path.exists() {
+        match fs::remove_file(&socket_path) {
+            Ok(_) => info!(log, "Removed existing socket file"; "path" => %socket_path.display()),
+            Err(e) => warn!(log, "Failed to remove existing socket file"; "path" => %socket_path.display(), "error" => %e),
+        }
+    }
+
+    // Create the socket
+    let listener = match UnixListener::bind(&socket_path) {
+        Ok(listener) => {
+            // Set socket permissions to user-only for security
+            if let Err(e) = fs::set_permissions(&socket_path, fs::Permissions::from_mode(0o600)) {
+                warn!(log, "Failed to set socket permissions"; "error" => %e);
+            }
+            listener
+        },
+        Err(e) => {
+            error!(log, "Failed to bind to socket"; "path" => %socket_path.display(), "error" => %e);
+            return Err(e.into());
+        }
+    };
     info!(log, "Listening on socket"; "path" => %socket_path.display());
 
     listener.set_nonblocking(true)?;

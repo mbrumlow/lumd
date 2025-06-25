@@ -161,8 +161,11 @@ cargo install --path .
 After installing with Cargo, you can set up the systemd user service:
 
 ```bash
-# Create config directory if it doesn't exist
+# Create required directories
 mkdir -p ~/.config/lumd/
+mkdir -p ~/.local/share/lumd
+mkdir -p ~/.local/run/lumd
+mkdir -p ~/.cache/lumd
 
 # Copy example config
 cp /path/to/repo/examples/config.toml ~/.config/lumd/
@@ -181,6 +184,30 @@ systemctl --user status lumd
 # View logs
 journalctl --user -u lumd
 ```
+
+#### Troubleshooting Systemd Service
+
+If you encounter permission errors:
+
+1. Check that the service has access to required directories:
+   ```bash
+   # The service needs write access to:
+   ls -la ~/.config/lumd
+   ls -la ~/.local/share/lumd
+   ls -la ~/.local/run/lumd
+   ls -la ~/.cache/lumd
+   ```
+
+2. Check systemd journal logs for specific errors:
+   ```bash
+   journalctl --user -u lumd -n 50 --no-pager
+   ```
+
+3. Make sure the backlight device is accessible:
+   ```bash
+   ls -la /sys/class/backlight/*/brightness
+   ```
+   You may need to add yourself to a group or create a udev rule to allow access.
 
 ### Using Nix
 

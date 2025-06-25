@@ -25,7 +25,18 @@ use server::LumdCommand;
 fn main() -> Result<()> {
     // Initialize application paths
     let paths = match Paths::new() {
-        Ok(paths) => paths,
+        Ok(paths) => {
+            // Ensure config directory exists
+            if let Some(parent) = paths.config_file().parent() {
+                if !parent.exists() {
+                    if let Err(e) = std::fs::create_dir_all(parent) {
+                        eprintln!("Failed to create config directory: {}", e);
+                        process::exit(1);
+                    }
+                }
+            }
+            paths
+        },
         Err(e) => {
             eprintln!("Failed to initialize application paths: {}", e);
             process::exit(1);
