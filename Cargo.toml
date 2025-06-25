@@ -1,6 +1,6 @@
 
 [workspace]
-members = ["lumd", "lumctl"]
+members = ["lumd", "lumctl", "test_logger_proj"]
 resolver = "3"
 
 [profile.release]

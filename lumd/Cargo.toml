@@ -7,7 +7,7 @@ edition = "2024"
 nix = { version = "0.30.1", features = ["user"] }
 slog = "2.7.0"
 slog-async = "2.7.0"
-slog-json = "2.6.1"  # Use slog-json directly instead of slog-bunyan
+slog-term = "2.9.0"  # Use slog-term for human-readable logs
 # Use manual struct serialization instead of derive to avoid proc-macro issues
 serde = { version = "1.0", default-features = false, features = ["std"] }
 xdg = "2.5"
