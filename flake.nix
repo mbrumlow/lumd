@@ -16,34 +16,48 @@
     }:
     {
       # Home Manager module
-      homeManagerModules.default = { config, lib, pkgs, ... }: 
-        let 
+      homeManagerModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+        let
           system = pkgs.stdenv.hostPlatform.system;
           lumdPackage = self.packages.${system}.default;
-        in {
+        in
+        {
           imports = [ ./home-manager-module.nix ];
-          
+
           # Pre-configure the package option to point to our flake's package
           config = lib.mkIf config.services.lumd.enable {
             services.lumd.package = lib.mkDefault lumdPackage;
           };
         };
-      
+
       # NixOS module
-      nixosModules.default = { config, lib, pkgs, ... }:
-        let 
+      nixosModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+        let
           system = pkgs.stdenv.hostPlatform.system;
           lumdPackage = self.packages.${system}.default;
-        in {
+        in
+        {
           imports = [ ./nixos-module.nix ];
-          
+
           # Pre-configure the package option to point to our flake's package
           config = lib.mkIf config.services.lumd.enable {
             services.lumd.package = lib.mkDefault lumdPackage;
           };
         };
-    } // 
-    flake-utils.lib.eachDefaultSystem (
+    }
+    // flake-utils.lib.eachDefaultSystem (
       system:
       let
         overlays = [ rust-overlay.overlays.default ];
@@ -124,14 +138,14 @@
             pkgs.glibc.dev
             pkgs.gcc
             pkgs.binutils
-            
+
             # Linux-specific libraries
             pkgs.linuxHeaders
-            
+
             # System libraries needed for nix crate
             pkgs.openssl
             pkgs.openssl.dev
-            
+
             # Development tools
             pkgs.rustup
             pkgs.cargo-edit
@@ -139,31 +153,33 @@
             pkgs.cargo-audit
             pkgs.rust-analyzer
           ];
-          
+
           # Set environment variables
           shellHook = ''
             # Set linker flags to avoid static linking
             export RUSTFLAGS="-C target-feature=-crt-static"
-            
+
             # Set path to system libraries
-            export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [
-              pkgs.glibc
-              pkgs.gcc.cc.lib
-              pkgs.openssl
-            ]}
-            
+            export LD_LIBRARY_PATH=${
+              pkgs.lib.makeLibraryPath [
+                pkgs.glibc
+                pkgs.gcc.cc.lib
+                pkgs.openssl
+              ]
+            }
+
             # Set C compiler path
             export CC=${pkgs.gcc}/bin/gcc
-            
+
             # Set linker path
             export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=${pkgs.gcc}/bin/gcc
-            
+
             # Add pkg-config path for system libraries
             export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig"
-            
+
             # Make rust-src available for rust-analyzer
             export RUST_SRC_PATH="${rust}/lib/rustlib/src/rust/library"
-            
+
             echo "Welcome to lumd development environment!"
           '';
         };
