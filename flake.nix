@@ -65,7 +65,10 @@
           inherit system;
           overlays = overlays;
         };
-        rust = pkgs.rust-bin.stable.latest.default;
+        rust = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" ];
+        };
+
       in
       {
         packages = {
@@ -147,11 +150,9 @@
             pkgs.openssl.dev
 
             # Development tools
-            pkgs.rustup
             pkgs.cargo-edit
             pkgs.cargo-watch
             pkgs.cargo-audit
-            pkgs.rust-analyzer
           ];
 
           # Set environment variables
@@ -176,9 +177,6 @@
 
             # Add pkg-config path for system libraries
             export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig"
-
-            # Make rust-src available for rust-analyzer
-            export RUST_SRC_PATH="${rust}/lib/rustlib/src/rust/library"
 
             echo "Welcome to lumd development environment!"
           '';
