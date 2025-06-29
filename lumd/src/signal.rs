@@ -6,8 +6,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 pub fn setup_signal_handler(logger: Logger, running: Arc<AtomicBool>) -> Result<()> {
-    let mut signals = Signals::new(&[SIGINT, SIGTERM])
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    let mut signals = Signals::new([SIGINT, SIGTERM])
+        .map_err(std::io::Error::other)?;
 
     let logger = logger.clone();
 

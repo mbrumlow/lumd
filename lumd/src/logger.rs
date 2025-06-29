@@ -7,10 +7,7 @@ use std::sync::Mutex;
 fn get_hostname() -> String {
     // Try to get hostname using the hostname command
     match Command::new("hostname").output() {
-        Ok(output) if output.status.success() => match String::from_utf8(output.stdout) {
-            Ok(hostname) => return hostname.trim().to_string(),
-            Err(_) => {}
-        },
+        Ok(output) if output.status.success() => if let Ok(hostname) = String::from_utf8(output.stdout) { return hostname.trim().to_string() },
         _ => {}
     }
 

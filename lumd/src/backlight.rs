@@ -16,13 +16,13 @@ pub fn read_and_adjust_ambient_light(
 ) -> Result<bool> {
     info!(log, "Reading ambient light and adjusting brightness");
 
-    let mut current_brightness = read_brightness(&backlight_path)?;
+    let mut current_brightness = read_brightness(backlight_path)?;
     let mut target_brightness = current_brightness;
     let should_force = force; // Rename to avoid the unused assignment
     let threshold = config.brightness_threshold;
 
     loop {
-        match read_lux(&iio_path) {
+        match read_lux(iio_path) {
             Ok(lux) => {
                 let mut new_target = lux_to_brightness(lux, max_brightness);
                 new_target += offset;
@@ -61,7 +61,7 @@ pub fn read_and_adjust_ambient_light(
         }
 
         if instant {
-            set_brightness(&backlight_path, target_brightness)?;
+            set_brightness(backlight_path, target_brightness)?;
             return Ok(true);
         }
 
@@ -80,11 +80,11 @@ pub fn read_and_adjust_ambient_light(
                 "interpolated" => interp
             );
 
-            set_brightness(&backlight_path, interp)?;
+            set_brightness(backlight_path, interp)?;
             current_brightness = interp;
 
             // Check if ambient light has changed significantly during transition
-            if let Ok(lux) = read_lux(&iio_path) {
+            if let Ok(lux) = read_lux(iio_path) {
                 let mut new_target = lux_to_brightness(lux, max_brightness);
                 new_target += offset;
                 if new_target < config.min_brightness {
@@ -106,7 +106,7 @@ pub fn read_and_adjust_ambient_light(
 
         // Make sure we reach the final target
         if current_brightness != target_brightness {
-            set_brightness(&backlight_path, target_brightness)?;
+            set_brightness(backlight_path, target_brightness)?;
         }
 
         return Ok(true);

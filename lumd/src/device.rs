@@ -38,12 +38,12 @@ pub fn find_illuminance_device() -> Result<PathBuf> {
 
 pub fn read_f32(path: &Path) -> Result<f32> {
     let s = fs::read_to_string(path)?;
-    s.trim().parse().map_err(|e| LumdError::ParseFloat(e))
+    s.trim().parse().map_err(LumdError::ParseFloat)
 }
 
 pub fn read_i32(path: &Path) -> Result<i32> {
     let s = fs::read_to_string(path)?;
-    s.trim().parse().map_err(|e| LumdError::Parse(e))
+    s.trim().parse().map_err(LumdError::Parse)
 }
 
 pub fn read_lux(iio_path: &Path) -> Result<f32> {
