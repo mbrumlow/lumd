@@ -1,5 +1,8 @@
-use std::{fs, path::{Path, PathBuf}};
-use crate::error::{Result, LumdError};
+use crate::error::{LumdError, Result};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub fn find_backlight_device() -> Result<PathBuf> {
     let base = PathBuf::from("/sys/class/backlight/");
@@ -10,7 +13,9 @@ pub fn find_backlight_device() -> Result<PathBuf> {
             return Ok(path);
         }
     }
-    Err(LumdError::DeviceNotFound("No backlight device found".into()))
+    Err(LumdError::DeviceNotFound(
+        "No backlight device found".into(),
+    ))
 }
 
 pub fn find_illuminance_device() -> Result<PathBuf> {
@@ -26,21 +31,19 @@ pub fn find_illuminance_device() -> Result<PathBuf> {
             }
         }
     }
-    Err(LumdError::DeviceNotFound("No IIO illuminance device found".into()))
+    Err(LumdError::DeviceNotFound(
+        "No IIO illuminance device found".into(),
+    ))
 }
 
 pub fn read_f32(path: &Path) -> Result<f32> {
     let s = fs::read_to_string(path)?;
-    s.trim()
-        .parse()
-        .map_err(|e| LumdError::ParseFloat(e))
+    s.trim().parse().map_err(|e| LumdError::ParseFloat(e))
 }
 
 pub fn read_i32(path: &Path) -> Result<i32> {
     let s = fs::read_to_string(path)?;
-    s.trim()
-        .parse()
-        .map_err(|e| LumdError::Parse(e))
+    s.trim().parse().map_err(|e| LumdError::Parse(e))
 }
 
 pub fn read_lux(iio_path: &Path) -> Result<f32> {

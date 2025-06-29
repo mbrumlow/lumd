@@ -30,11 +30,12 @@ impl Paths {
                 PathBuf::from(format!("/tmp/lumd-{}", uid))
             }
         };
-        
+
         // Ensure the runtime directory exists
         if !runtime_dir.exists() {
-            std::fs::create_dir_all(&runtime_dir)
-                .map_err(|e| LumdError::InvalidData(format!("Failed to create runtime directory: {}", e)))?;
+            std::fs::create_dir_all(&runtime_dir).map_err(|e| {
+                LumdError::InvalidData(format!("Failed to create runtime directory: {}", e))
+            })?;
         }
 
         let cache_dir = xdg.get_cache_home();
