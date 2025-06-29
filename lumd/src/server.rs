@@ -1,17 +1,18 @@
+use crate::error::{LumdError, Result};
+use slog::{Logger, error, info, warn};
 use std::{
     fs, io,
     io::Read,
-    os::unix::{
-        net::UnixListener,
-        fs::PermissionsExt,
-    },
+    os::unix::{fs::PermissionsExt, net::UnixListener},
     path::PathBuf,
-    sync::{mpsc::Sender, atomic::{AtomicBool, Ordering}, Arc},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc::Sender,
+    },
     thread,
     time::Duration,
 };
-use slog::{Logger, info, warn, error};
-use crate::error::{Result, LumdError};
 
 #[derive(Debug)]
 pub enum LumdCommand {
@@ -25,13 +26,14 @@ pub fn socket_server(
     log: Logger,
     socket_path: PathBuf,
     trigger_tx: Sender<LumdCommand>,
-    running: Arc<AtomicBool>
+    running: Arc<AtomicBool>,
 ) -> Result<()> {
     // Ensure socket directory exists
     if let Some(parent) = socket_path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| LumdError::InvalidData(format!("Failed to create socket directory: {}", e)))?;
+            fs::create_dir_all(parent).map_err(|e| {
+                LumdError::InvalidData(format!("Failed to create socket directory: {}", e))
+            })?;
         }
     }
 
@@ -39,7 +41,9 @@ pub fn socket_server(
     if socket_path.exists() {
         match fs::remove_file(&socket_path) {
             Ok(_) => info!(log, "Removed existing socket file"; "path" => %socket_path.display()),
-            Err(e) => warn!(log, "Failed to remove existing socket file"; "path" => %socket_path.display(), "error" => %e),
+            Err(e) => {
+                warn!(log, "Failed to remove existing socket file"; "path" => %socket_path.display(), "error" => %e)
+            }
         }
     }
 
@@ -51,7 +55,7 @@ pub fn socket_server(
                 warn!(log, "Failed to set socket permissions"; "error" => %e);
             }
             listener
-        },
+        }
         Err(e) => {
             error!(log, "Failed to bind to socket"; "path" => %socket_path.display(), "error" => %e);
             return Err(e.into());
@@ -60,7 +64,7 @@ pub fn socket_server(
     info!(log, "Listening on socket"; "path" => %socket_path.display());
 
     listener.set_nonblocking(true)?;
-    
+
     while running.load(Ordering::SeqCst) {
         match listener.accept() {
             Ok((mut stream, _addr)) => {
@@ -70,23 +74,27 @@ pub fn socket_server(
                     match cmd.trim() {
                         "up" => {
                             info!(log, "Command received: increase backlight");
-                            trigger_tx.send(LumdCommand::BrightnessUp)
-                                .map_err(|_| LumdError::Communication("Channel send error".into()))?;
+                            trigger_tx.send(LumdCommand::BrightnessUp).map_err(|_| {
+                                LumdError::Communication("Channel send error".into())
+                            })?;
                         }
                         "down" => {
                             info!(log, "Command received: decrease backlight");
-                            trigger_tx.send(LumdCommand::BrightnessDown)
-                                .map_err(|_| LumdError::Communication("Channel send error".into()))?;
+                            trigger_tx.send(LumdCommand::BrightnessDown).map_err(|_| {
+                                LumdError::Communication("Channel send error".into())
+                            })?;
                         }
                         "resample" => {
                             info!(log, "Command received: resample now");
-                            trigger_tx.send(LumdCommand::Resample)
-                                .map_err(|_| LumdError::Communication("Channel send error".into()))?;
+                            trigger_tx.send(LumdCommand::Resample).map_err(|_| {
+                                LumdError::Communication("Channel send error".into())
+                            })?;
                         }
                         "shutdown" => {
                             info!(log, "Command received: shutdown");
-                            trigger_tx.send(LumdCommand::Shutdown)
-                                .map_err(|_| LumdError::Communication("Channel send error".into()))?;
+                            trigger_tx.send(LumdCommand::Shutdown).map_err(|_| {
+                                LumdError::Communication("Channel send error".into())
+                            })?;
                         }
                         _ => warn!(log, "Unknown command received"; "command" => cmd.trim()),
                     }
@@ -101,11 +109,11 @@ pub fn socket_server(
             }
         }
     }
-    
+
     // Clean up socket file on exit
     if socket_path.exists() {
         let _ = fs::remove_file(&socket_path);
     }
-    
+
     Ok(())
 }

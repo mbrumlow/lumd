@@ -1,11 +1,15 @@
 use std::{
-    sync::{mpsc::{self, Receiver, Sender}, atomic::{AtomicBool, Ordering}, Arc},
+    process,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{self, Receiver, Sender},
+    },
     thread,
     time::Duration,
-    process,
 };
 
-use slog::{info, warn, error, debug, o};
+use slog::{debug, error, info, o, warn};
 
 mod backlight;
 mod config;
@@ -36,79 +40,79 @@ fn main() -> Result<()> {
                 }
             }
             paths
-        },
+        }
         Err(e) => {
             eprintln!("Failed to initialize application paths: {}", e);
             process::exit(1);
         }
     };
-    
+
     // Set up logger - using stdout/stderr for systemd journal
     let root_log = logger::setup_logger(None);
     let log = root_log.clone();
     info!(log, "Lumd starting up"; "version" => env!("CARGO_PKG_VERSION"));
-    
+
     // Set up running flag for clean shutdown
     let running = Arc::new(AtomicBool::new(true));
-    
+
     // Set up signal handler
     signal::setup_signal_handler(log.clone(), Arc::clone(&running))?;
-    
+
     // Load configuration
     let config = match Config::from_file(paths.config_file()) {
         Ok(config) => {
             info!(log, "Loaded configuration from file"; "path" => %paths.config_file().display());
             config
-        },
+        }
         Err(e) => {
             warn!(log, "Could not load config file, using defaults"; "error" => %e);
             Config::default()
         }
     };
-    
+
     // Find required devices
     let iio_path = match find_illuminance_device() {
         Ok(path) => {
             info!(log, "Found illuminance device"; "path" => %path.display());
             path
-        },
+        }
         Err(e) => {
             error!(log, "Failed to find illuminance device"; "error" => %e);
             return Err(e);
         }
     };
-    
+
     let backlight_path = match find_backlight_device() {
         Ok(path) => {
             info!(log, "Found backlight device"; "path" => %path.display());
             path
-        },
+        }
         Err(e) => {
             error!(log, "Failed to find backlight device"; "error" => %e);
             return Err(e);
         }
     };
-    
+
     // Read max brightness value
     let max_brightness = match read_max_brightness(&backlight_path) {
         Ok(max) => {
             info!(log, "Read max brightness"; "value" => max);
             max
-        },
+        }
         Err(e) => {
             error!(log, "Failed to read max brightness"; "error" => %e);
             return Err(e);
         }
     };
-    
+
     // Set up socket path
     let socket_path = paths.socket_path();
-    
+
     // Initialize variables
     let mut sleep = config.sample_interval_secs;
     let mut offset = config.brightness_offset;
     let mut instant = true;
-    
+
     // Set up channel for communication between threads
     let (tx, rx): (Sender<LumdCommand>, Receiver<LumdCommand>) = mpsc::channel();
 
@@ -119,7 +123,9 @@ fn main() -> Result<()> {
     let server_log = log.clone();
     let socket_path_owned = socket_path.to_path_buf();
     thread::spawn(move || {
-        if let Err(e) = server::socket_server(socket_log, socket_path_owned, tx_clone, running_clone) {
+        if let Err(e) =
+            server::socket_server(socket_log, socket_path_owned, tx_clone, running_clone)
+        {
             error!(server_log, "Socket server error"; "error" => %e);
         }
     });
@@ -163,7 +169,10 @@ fn main() -> Result<()> {
                 },
                 Err(mpsc::RecvTimeoutError::Timeout) => {
                     // fall through to next iteration (normal sampling)
-                    debug!(sample_log, "Sampling timeout reached, proceeding with normal sample");
+                    debug!(
+                        sample_log,
+                        "Sampling timeout reached, proceeding with normal sample"
+                    );
                     sleep = config.sample_interval_secs;
                 }
                 Err(e) => {
@@ -188,12 +197,12 @@ fn main() -> Result<()> {
                     offset = next_offset;
                     debug!(sample_log, "Updated brightness offset"; "offset" => offset);
                 }
-            },
+            }
             Err(e) => {
                 error!(sample_log, "Failed to adjust brightness"; "error" => %e);
             }
         }
-        
+
         instant = false;
     }
 

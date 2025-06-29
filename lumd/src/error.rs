@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf, fmt, error::Error};
+use std::{error::Error, fmt, io, path::PathBuf};
 
 #[derive(Debug)]
 pub enum LumdError {
