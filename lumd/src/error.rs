@@ -1,4 +1,6 @@
-use std::{error::Error, fmt, io, path::PathBuf};
+use std::error::Error;
+use std::fmt;
+use std::io;
 
 #[derive(Debug)]
 pub enum LumdError {
@@ -7,9 +9,6 @@ pub enum LumdError {
     ParseFloat(std::num::ParseFloatError),
     DeviceNotFound(String),
     InvalidData(String),
-    Socket(String),
-    FileNotFound(PathBuf),
-    PermissionDenied(PathBuf),
     Communication(String),
 }
 
@@ -21,9 +20,6 @@ impl fmt::Display for LumdError {
             LumdError::ParseFloat(e) => write!(f, "Parse float error: {}", e),
             LumdError::DeviceNotFound(s) => write!(f, "Device not found: {}", s),
             LumdError::InvalidData(s) => write!(f, "Invalid data: {}", s),
-            LumdError::Socket(s) => write!(f, "Socket error: {}", s),
-            LumdError::FileNotFound(p) => write!(f, "File not found: {}", p.display()),
-            LumdError::PermissionDenied(p) => write!(f, "Permission denied: {}", p.display()),
             LumdError::Communication(s) => write!(f, "Communication error: {}", s),
         }
     }
