@@ -10,9 +10,8 @@ if builtins ? getFlake
 then defaultShell
 else pkgs.mkShell {
   packages = with pkgs; [
+    
     # Basic development dependencies
-    rustc
-    cargo
     pkg-config
     glibc
     glibc.dev
@@ -25,6 +24,13 @@ else pkgs.mkShell {
     # System libraries needed for nix crate
     openssl
     openssl.dev
+
+    # Rust
+    rustc
+    cargo
+    clippy
+    rustfmt
+    rust-analyzer
   ];
 
   # Set environment variables
