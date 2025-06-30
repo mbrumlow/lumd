@@ -74,10 +74,10 @@ fn get_socket_path() -> Result<PathBuf> {
     let dir = PathBuf::from(format!("/var/run/user/{}", uid));
 
     if !dir.exists() {
-        fs::create_dir_all(&dir).map_err(LumctlError::Io)?;
+        fs::create_dir_all(&dir)?;
     }
 
-    fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).map_err(LumctlError::Io)?;
+    fs::set_permissions(&dir, fs::Permissions::from_mode(0o700))?;
 
     Ok(dir.join("lumd.sock"))
 }
