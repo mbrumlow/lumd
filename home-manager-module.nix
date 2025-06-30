@@ -62,8 +62,6 @@ in {
 
     # Create configuration file and directory
     home.file.".config/lumd/.keep".text = "";
-    home.file.".local/share/lumd/.keep".text = "";
-    home.file.".cache/lumd/.keep".text = "";
 
     # Create configuration file
     xdg.configFile."lumd/config.toml".text = ''
@@ -101,7 +99,6 @@ in {
         # Environment variables
         Environment = [
           "XDG_CONFIG_HOME=%h/.config"
-          "XDG_CACHE_HOME=%h/.cache"
           "XDG_RUNTIME_DIR=%t"
         ];
         
@@ -115,7 +112,7 @@ in {
         NoNewPrivileges = true;
         ProtectSystem = "strict";
         ProtectHome = "read-write";
-        ReadWritePaths = "%h/.config/lumd %h/.local/share/lumd %h/.cache/lumd";
+        ReadWritePaths = "%h/.config/lumd";
         RuntimeDirectory = "lumd";
         RuntimeDirectoryMode = "0755";
         # Use ReadWritePaths instead of ConfigurationDirectory to avoid permission conflicts

@@ -9,7 +9,6 @@ ExecStart=%h/.nix-profile/bin/lumd
 Restart=on-failure
 RestartSec=5
 Environment=XDG_CONFIG_HOME=%h/.config
-Environment=XDG_CACHE_HOME=%h/.cache
 Environment=XDG_RUNTIME_DIR=%t
 
 # Logging
@@ -22,7 +21,7 @@ PrivateTmp=true
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-write
-ReadWritePaths=%h/.config/lumd %h/.local/share/lumd %h/.cache/lumd
+ReadWritePaths=%h/.config/lumd
 RuntimeDirectory=lumd
 RuntimeDirectoryMode=0755
 # Use ReadWritePaths instead of ConfigurationDirectory to avoid permission conflicts

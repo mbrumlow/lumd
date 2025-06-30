@@ -3,10 +3,6 @@ use std::path::PathBuf;
 use xdg::BaseDirectories;
 
 pub struct Paths {
-    // Base directories
-    pub config_dir: PathBuf,
-    pub runtime_dir: PathBuf,
-    pub cache_dir: PathBuf,
     pub config_file_path: PathBuf,
     pub socket_path: PathBuf,
 }
@@ -14,11 +10,7 @@ pub struct Paths {
 impl Paths {
     pub fn new() -> Result<Self> {
         // Create XDG base directories
-        let xdg = BaseDirectories::with_prefix("lumd")
-            .map_err(|e| LumdError::InvalidData(format!("XDG error: {}", e)))?;
-
-        // Get the base directories
-        let config_dir = xdg.get_config_home();
+        let xdg = BaseDirectories::with_prefix("lumd");
 
         // Runtime directory handling
         // First try XDG_RUNTIME_DIR (the standard environment variable)
@@ -38,8 +30,6 @@ impl Paths {
             })?;
         }
 
-        let cache_dir = xdg.get_cache_home();
-
         // Create config file path
         let config_file_path = xdg
             .place_config_file("config.toml")
@@ -49,9 +39,6 @@ impl Paths {
         let socket_path = runtime_dir.join("lumd.sock");
 
         Ok(Self {
-            config_dir,
-            runtime_dir,
-            cache_dir,
             config_file_path,
             socket_path,
         })
